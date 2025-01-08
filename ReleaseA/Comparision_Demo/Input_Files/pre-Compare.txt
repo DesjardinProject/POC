@@ -1,0 +1,173 @@
+#!/bin/bash
+
+
+
+# Set branch name
+branch="main" # Replace with your branch name
+
+
+
+# Navigate to the Git repository
+
+path=$(pwd) # Replace with your repository path
+
+
+
+# Get all .zip files in the current directory
+
+zipFiles=(*.zip)
+
+
+
+# Ensure at least one zip file exists
+
+if [ ${#zipFiles[@]} -eq 0 ]; then
+
+    echo "No zip files found in the directory. Exiting."
+
+    exit 1
+
+fi
+
+
+
+# Rename zip files with timestamp
+
+for file in "${zipFiles[@]}"; do
+
+    timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+
+    newName="${file%.zip}_$timestamp.zip"
+
+    mv "$file" "$newName"
+
+    echo "Renamed $file to $newName"
+
+    renamedFiles+=("$newName")
+
+done
+
+
+
+# Compare renamed zip files with existing files in Git
+
+for file in "${renamedFiles[@]}"; do
+
+    existingFile=$(git ls-files | grep -w "$file")
+
+    if [ "$existingFile" ]; then
+
+        # Extract contents for comparison
+
+        mkdir -p temp_new temp_existing
+
+        unzip -q "$file" -d temp_new
+
+        git show "HEAD:$existingFile" | tar -xO | unzip -q -d temp_existing
+
+
+
+        diff=$(diff -r temp_new temp_existing)
+
+        if [ -z "$diff" ]; then
+
+            echo "No changes detected in $file. Skipping commit."
+
+            rm -rf temp_new temp_existing
+
+            continue
+
+        fi
+
+
+
+        rm -rf temp_new temp_existing
+
+    fi
+
+
+
+    # Add the file to Git
+
+    git add "$file"
+
+    echo "Added $file to staging."
+
+done
+
+
+
+# Commit changes
+
+git commit -m "Renamed and added zip files with timestamp"
+
+
+
+# Push changes to the branch
+
+echo "Pushing changes to $branch..."
+
+git push origin "$branch"
+
+
+
+# Check for conflicts or merge issues
+
+# Check if we are in a Git repository
+
+if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+
+    echo "Not a Git repository. Exiting."
+
+    exit 1
+
+fi
+
+
+
+# Check for uncommitted changes
+
+if [[ -n $(git status --porcelain) ]]; then
+
+    echo "Uncommitted changes detected. Please commit or stash your changes before proceeding."
+
+    exit 1
+
+fi
+
+
+
+# Check the current status
+
+gitStatus=$(git status --porcelain)
+
+if [[ "$gitStatus" =~ "both modified" ]]; then
+
+    echo "Conflict detected. Attempting to resolve automatically..."
+
+    git merge --strategy-option theirs || {
+
+        echo "Merge conflict resolution failed. Please resolve manually."
+
+        exit 1
+
+    }
+
+    git commit -m "Resolved conflicts automatically"
+
+    git push origin "$branch"
+
+elif [[ "$gitStatus" =~ "Your branch is ahead" ]]; then
+
+    echo "Your branch is ahead. Pushing changes..."
+
+    git push origin "$branch"
+
+else
+
+    echo "No conflicts or merge issues detected."
+
+fi
+
+
+echo "Script completed successfully."
