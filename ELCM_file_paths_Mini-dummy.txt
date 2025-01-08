@@ -1,8 +1,3 @@
-edit for Release A
-BBBBBB
-nn
-nnn
-nnn
 /u01/fcubs/shared/ELCM/applications/OBELCM_14.5.0.0.0/ADAPTERS/OIM/FCUBSLOVAdService/config/lookup_logger.xml
 /u01/fcubs/shared/ELCM/applications/OBELCM_14.5.0.0.0/ADAPTERS/OIM/FCUBSLOVAdService/config/lookup_prop.xml
 /u01/fcubs/shared/ELCM/applications/OBELCM_14.5.0.0.0/ADAPTERS/OIM/FCUBSLOVAdService/setup/OC4J/build.xml
